@@ -1,0 +1,2 @@
+Hello-world! It's a state-of-the-art test.
+123 numbers should be separated, and foo- is not valid while --foo is.
