@@ -1,0 +1,38 @@
+Project 2: Word occurrence count
+****************************************
+Authors: Maksym LaRouche msl226
+
+1. Design & Implementation
+****************************************
+Command-Line Argument Handling:
+I iterate over command-line arguments to parse the optional `-s` flag. The implementation supports both attached (`-s.md`) and separated (`-s .md`) suffix options. If no suffix is explicitly specified, it defaults to `.txt`. Non-flag arguments are captured as file or directory target paths.
+
+Directory Traversal & Recursion:
+I use `stat()` to determine whether a target path is a regular file or a directory. For directory inputs, I open and read contents using `opendir()`, `readdir()`, and `closedir()`. Entries beginning with a period (`.`) are ignored to exclude hidden files and hidden subdirectories. Regular files found during directory traversal are processed only if they match the specified suffix, whereas files passed directly as command-line arguments are always processed regardless of their extension.
+
+Dynamic File Reading:
+Files are opened using `open()` and read using `read()`. To strictly adhere to the requirement of not assuming a maximum file size or maximum word length, I stream contents into a dynamically allocated buffer that doubles in size via `realloc()` as necessary until reaching EOF.
+
+Word Parsing & Punctuation Rules:
+Text buffers are tokenized according to the specific assignment rules:
+- Letters form the core of words.
+- Apostrophes (`'`) are allowed anywhere within a word.
+- Hyphens (`-`) are preserved only when sandwiched between two alphabetical characters (`isalpha()`). Dangling hyphens or double hyphens act as word boundaries.
+- Numbers, whitespace, and non-word punctuation separate words.
+- Capitalization is preserved (`foo` and `Foo` are tracked as distinct entries).
+
+Data Aggregation & Output Formatting:
+Words are accumulated across all processed files into a global dynamic array of `WordEntry` structs. Once all files are scanned, I sort the word array using `qsort()`:
+1. Primary key: Occurrence count in descending order.
+2. Secondary key: Lexicographical order in ascending order for frequency ties.
+Results are output line-by-line to standard output using the `write()` system call.
+
+2. Testing Plan
+********************************************
+I developed targeted test cases to verify directory traversal edge cases, suffix parsing, and complex punctuation rules:
+
+- Suffix Flag Parsing: Tested default behavior (no `-s` specified), attached suffix options (`-s.md`), and separated suffix options (`-s .md`).
+- File & Directory Filtering: Created a test hierarchy containing non-matching file extensions (`file.a`), hidden files (`.c.txt`), and hidden subdirectories (`.baz/`). Verified that hidden entries and non-matching extensions are skipped during directory traversal, but explicit file arguments bypass suffix filtering.
+- Recursive Traversal: Created nested subdirectories (`bar/e.txt`) to confirm directory scanning recursively visits valid subfolders.
+- Apostrophe & Hyphen Edge Cases: Tested leading, middle, and trailing apostrophes (`'oo`, `It's`), single hyphens (`foo-bar`), double hyphens (`foo--bar`), and dangling hyphens (`foo-`, `-foo`) to ensure punctuation logic isolates tokens properly.
+- Number Delimiters: Tested alphanumeric input (`Super23foo`) to verify that digits correctly split words into distinct tokens (`Super` and `foo`).
